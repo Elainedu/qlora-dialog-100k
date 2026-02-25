@@ -1,0 +1,17 @@
+# Large model files
+my-lora-*/
+*.pth
+*.pt
+*.bin
+*.safetensors
+
+# Dataset files
+train_dataset_*/
+*.arrow
+
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/

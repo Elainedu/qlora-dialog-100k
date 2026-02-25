@@ -1,0 +1,22 @@
+# QLoRA Dialog Model - Dependencies
+
+# Deep Learning
+torch>=2.0.0
+transformers>=4.32.0
+datasets>=2.14.0
+
+# QLoRA & PEFT
+peft>=0.5.0
+accelerate>=0.23.0
+bitsandbytes>=0.41.1
+
+# UI
+gradio>=4.0.0
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Utils
+tqdm>=4.65.0
+pyyaml>=6.0

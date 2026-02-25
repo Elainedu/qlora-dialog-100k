@@ -1,0 +1,55 @@
+{
+  "builder_name": "json",
+  "citation": "",
+  "config_name": "default",
+  "dataset_name": "json",
+  "dataset_size": 4519794,
+  "description": "",
+  "download_checksums": {
+    "C:/Users/USER/OneDrive - \u570b\u7acb\u9ad8\u96c4\u79d1\u6280\u5927\u5b78/\u684c\u9762/\u6df1\u5ea6\u5b78\u7fd2/Email\u8cc7\u6599/alpaca_gpt4_data_zh.json": {
+      "num_bytes": 5165084,
+      "checksum": null
+    }
+  },
+  "download_size": 5165084,
+  "features": {
+    "input_ids": {
+      "feature": {
+        "dtype": "int32",
+        "_type": "Value"
+      },
+      "_type": "Sequence"
+    },
+    "attention_mask": {
+      "feature": {
+        "dtype": "int8",
+        "_type": "Value"
+      },
+      "_type": "Sequence"
+    },
+    "labels": {
+      "feature": {
+        "dtype": "int64",
+        "_type": "Value"
+      },
+      "_type": "Sequence"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 9684878,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 4519794,
+      "num_examples": 15363,
+      "dataset_name": "json"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}
