@@ -1,175 +1,216 @@
-# QLoRA 微調 - YeungNLP BLOOM (100K 資料集)
+# qlora-dialog-100k
 
-使用 QLoRA (Quantized Low-Rank Adaptation) 方法對 YeungNLP BLOOM 模型進行參數高效微調。
+QLoRA fine-tuning of BLOOM on a 100K Chinese dialogue dataset, with two Gradio
+front-ends for the resulting model.
 
-## 📋 專案概述
+## Overview
 
-本專案採用 QLoRA 微調技術，使用 100K Human-Assistant 對話資料集，在有限的 GPU 資源下高效訓練中文對話模型。
+This project applies QLoRA (4-bit quantisation + LoRA) to fine-tune a
+BLOOM-based Chinese language model on ~100,000 Human/Assistant conversation
+pairs. Two Jupyter notebooks cover training and LoRA-to-base merging, and two
+Gradio applications are provided: one that loads the LoRA adapter on top of
+the quantised base, and one that serves the fully merged checkpoint.
 
-## 🎯 技術亮點
+## Model / Approach
 
-- **QLoRA**: 4-bit 量化 + LoRA，大幅降低顯存需求
-- **基礎模型**: YeungNLP/bloom-1b1-zh (中文優化版)
-- **資料規模**: 100K 對話樣本
-- **硬體支援**: T4 GPU / DGX-1
+- Base model: `YeungNLP/bloom-1b1-zh` (Chinese-optimised BLOOM)
+- Fine-tuning method: QLoRA
+  - 4-bit NF4 quantisation via `bitsandbytes`
+  - LoRA adapters via `peft`
+  - Trainable parameter share: ~6-7% of the full model
+- Dataset: BELLE Dialog 100K (YeungNLP redistribution)
+  - Train split: `train_dataset_belle_100k_YeungNLP/data_train/` (~351 MB Arrow)
+  - Val split:   `train_dataset_belle_100k_YeungNLP/data_val/` (~7 MB Arrow)
+- Training: 1 epoch, best checkpoint at step 640
+- Hardware tested: NVIDIA T4 (~10 GB VRAM), DGX-1
+- Training time: ~2-3 hours on a single T4
 
-## 📊 資料集
-
-### 訓練資料
-- **資料來源**: BELLE Dialog 100K (YeungNLP 版本)
-- **訓練集**: `train_dataset_belle_100k_YeungNLP/data_train/` (351MB)
-- **驗證集**: `train_dataset_belle_100k_YeungNLP/data_val/` (7MB)
-
-### 資料集結構
-```
-train_dataset_belle_100k_YeungNLP/
-├── data_train/
-│   ├── data-00000-of-00001.arrow (351MB)
-│   ├── dataset_info.json
-│   └── state.json
-└── data_val/
-    ├── data-00000-of-00001.arrow (7MB)
-    ├── dataset_info.json
-    └── state.json
-```
-
-## 📓 核心檔案
-
-### 1. QLoRA 微調訓練
-**10-10-qlora-finetune bloomz-YeungNLP-T4-支援DGX1.ipynb** (57KB)
-- QLoRA 配置與初始化
-- 4-bit 量化設定
-- LoRA 適配器訓練
-- 支援 T4 和 DGX-1 GPU
-
-### 2. 模型合併
-**10-15-合併lora與基礎模型.ipynb** (2.6KB)
-- LoRA 權重與基礎模型合併
-- 生成完整推理模型
-- 模型導出與保存
-
-### 3. Gradio 應用
-
-#### v1: QLoRA 聊天模式
-**gradio-app-v1-qlora-chatbot對話模式-自訂streaming-可調整多個參數.py** (14KB)
-- 即時串流輸出
-- 可調整生成參數 (temperature, top_p, top_k)
-- 自訂對話歷史管理
-
-#### v2: 合併模型推理
-**gradio-app-v2-for-merged-model-gr對話式與TransformersTextIteratorStreamer.py** (7.2KB)
-- 使用合併後的完整模型
-- TextIteratorStreamer 實現
-- 優化的對話介面
-
-## 🤖 訓練好的模型
-
-### LoRA 適配器
-`my-lora-model-1epoch-YeungNLP/`
-- **adapter_model.bin**: 97MB (LoRA 權重)
-- **adapter_config.json**: LoRA 配置
-
-### 合併後的完整模型
-`my-lora-merged-model-steps640-YeungNLP/`
-- **pytorch_model.bin**: 667MB (完整模型)
-- **config.json**: 模型配置
-- **tokenizer.json**: 2.1MB (分詞器)
-- **generation_config.json**: 生成配置
-
-## ⚙️ QLoRA 配置
+### QLoRA configuration used
 
 ```python
-# LoRA 配置
 lora_config = {
-    "r": 8,                    # LoRA rank
-    "lora_alpha": 32,          # LoRA alpha
+    "r": 8,
+    "lora_alpha": 32,
     "target_modules": ["query_key_value"],
     "lora_dropout": 0.05,
     "bias": "none",
-    "task_type": "CAUSAL_LM"
+    "task_type": "CAUSAL_LM",
 }
 
-# 4-bit 量化配置
 bnb_config = {
     "load_in_4bit": True,
     "bnb_4bit_quant_type": "nf4",
     "bnb_4bit_compute_dtype": "float16",
-    "bnb_4bit_use_double_quant": True
+    "bnb_4bit_use_double_quant": True,
 }
 ```
 
-## 🚀 使用方式
+## Requirements
 
-### 1. QLoRA 訓練
-```bash
-# 在 T4 或 DGX-1 上執行
-jupyter notebook 10-10-qlora-finetune\ bloomz-YeungNLP-T4-支援DGX1.ipynb
+From `requirements.txt`:
+
+```
+torch>=2.0.0
+transformers>=4.32.0
+datasets>=2.14.0
+peft>=0.5.0
+accelerate>=0.23.0
+bitsandbytes>=0.41.1
+gradio>=4.0.0
+pandas>=2.0.0
+numpy>=1.24.0
+tqdm>=4.65.0
+pyyaml>=6.0
 ```
 
-### 2. 合併模型
-```bash
-jupyter notebook 10-15-合併lora與基礎模型.ipynb
-```
+Additional notes:
 
-### 3. 啟動 Gradio 介面
+- Python 3.10+
+- CUDA 11.7+
+- A CUDA GPU with **at least 10 GB VRAM** for QLoRA inference/training
+  (T4 / V100 / A100)
+- `bitsandbytes` is required for 4-bit loading and is only reliably supported
+  on Linux (Windows users can still run the *merged* v2 demo without
+  `bitsandbytes`)
 
-#### 使用 LoRA 模型
-```bash
-python gradio-app-v1-qlora-chatbot對話模式-自訂streaming-可調整多個參數.py
-```
-
-#### 使用合併後的模型
-```bash
-python gradio-app-v2-for-merged-model-gr對話式與TransformersTextIteratorStreamer.py
-```
-
-## 📈 訓練效果
-
-- **訓練輪數**: 1 epoch
-- **Checkpoint**: Step 640
-- **顯存需求**: ~10GB (QLoRA) vs ~40GB (Full Fine-tuning)
-- **訓練時間**: 約 2-3 小時 (T4 GPU)
-
-## 💾 顯存優化
-
-| 方法 | 顯存需求 | 訓練速度 |
-|------|---------|---------|
-| Full Fine-tuning | ~40GB | 快 |
-| QLoRA (本專案) | ~10GB | 中等 |
-| LoRA (8-bit) | ~15GB | 較快 |
-
-## 🔧 環境需求
+Install:
 
 ```bash
-transformers >= 4.30.0
-peft >= 0.4.0
-bitsandbytes >= 0.40.0
-accelerate >= 0.20.0
-gradio >= 3.35.0
-torch >= 2.0.0
+pip install -r requirements.txt
 ```
 
-## 🎨 Gradio 介面特色
+## Quick Start
 
-- 📊 **可調參數**: Temperature, Top-p, Top-k, Repetition Penalty
-- 🔄 **串流輸出**: 即時生成文字
-- 💬 **對話歷史**: 支援多輪對話
-- 🌏 **簡繁轉換**: 自動處理繁簡體中文
-- 📝 **範例問題**: 預設多個示範問題
+```bash
+# 1. Clone
+git clone https://github.com/Elainedu/qlora-dialog-100k.git
+cd qlora-dialog-100k
 
-## ⚠️ 注意事項
+# 2. Install dependencies
+pip install -r requirements.txt
 
-1. **GPU 需求**: 至少 10GB 顯存 (T4/V100/A100)
-2. **CUDA 版本**: 需要 CUDA 11.7+
-3. **量化支援**: 需要安裝 bitsandbytes (僅支援 Linux)
-4. **模型路徑**: 確認 Gradio 腳本中的模型路徑正確
+# 3. Choose one of the demos below
+```
 
-## 📚 參考資源
+### Run the QLoRA (adapter + 4-bit base) demo - v1
 
-- [QLoRA Paper](https://arxiv.org/abs/2305.14314)
-- [PEFT Documentation](https://huggingface.co/docs/peft)
-- [YeungNLP Models](https://huggingface.co/YeungNLP)
+```bash
+python gradio-app-v1-qlora-chat-custom-streaming.py
+```
 
----
-*訓練日期: 2023-12 ~ 2024-01*
-*支援硬體: T4, DGX-1*
+Loads `YeungNLP/bloom-1b1-zh` in 4-bit and attaches the LoRA adapter in
+`my-lora-model-1epoch-YeungNLP/`.
+
+### Run the merged-model demo - v2
+
+```bash
+python gradio-app-v2-merged-model-iterator-streaming.py
+```
+
+Loads the fully merged checkpoint in `my-lora-merged-model-steps640-YeungNLP/`
+via `AutoModelForCausalLM` (uses `TextIteratorStreamer` for streaming output).
+No `bitsandbytes` required.
+
+### Simple non-Gradio smoke test
+
+```bash
+python demo.py
+```
+
+## Training / Merging Workflow
+
+```bash
+# 1. Fine-tune with QLoRA
+jupyter notebook 10-10-qlora-finetune-bloomz-YeungNLP.ipynb
+
+# 2. Merge the LoRA weights back into the base model
+jupyter notebook 10-15-merge-lora-weights-to-base-model.ipynb
+```
+
+The merge step writes the standalone checkpoint that
+`gradio-app-v2-merged-model-iterator-streaming.py` consumes.
+
+## Project Structure
+
+```
+qlora-dialog-100k/
+├── 10-10-qlora-finetune-bloomz-YeungNLP.ipynb          # QLoRA training notebook
+├── 10-15-merge-lora-weights-to-base-model.ipynb        # LoRA + base merge notebook
+├── demo.py                                             # CLI smoke test
+├── gradio-app-v1-qlora-chat-custom-streaming.py        # v1: 4-bit base + LoRA adapter
+├── gradio-app-v2-merged-model-iterator-streaming.py    # v2: merged model, no bitsandbytes
+├── my-lora-model-1epoch-YeungNLP/                      # LoRA adapter (~97 MB) *
+│   ├── adapter_model.bin
+│   └── adapter_config.json
+├── my-lora-merged-model-steps640-YeungNLP/             # Merged full model (~667 MB) *
+│   ├── pytorch_model.bin
+│   ├── config.json
+│   ├── generation_config.json
+│   └── tokenizer.json
+├── train_dataset_belle_100k_YeungNLP/                  # Arrow-format dataset *
+│   ├── data_train/
+│   └── data_val/
+├── configs/ data/ models/ notebooks/ src/
+├── requirements.txt
+└── README.md
+```
+
+`*` = large artefact, not necessarily present in a fresh clone; see Notes.
+
+## Gradio UI
+
+Both apps share the same feature set:
+
+- Streaming output (custom queue-based streamer in v1,
+  `TextIteratorStreamer` in v2)
+- Multi-turn conversation history
+- Sliders for `temperature`, `top_p`, `top_k`, `repetition_penalty`
+- Preset example prompts
+- OpenCC-based Simplified <-> Traditional conversion
+
+## Memory Footprint
+
+| Method                    | VRAM required | Training speed |
+| ------------------------- | ------------- | -------------- |
+| Full fine-tuning          | ~40 GB        | Fast           |
+| **QLoRA (this repo)**     | ~10 GB        | Medium         |
+| LoRA (8-bit)              | ~15 GB        | Faster         |
+
+## Notes
+
+- **Weights and datasets are typically not stored in git** due to size.
+  If any of the following folders are missing after cloning, obtain them as
+  described:
+
+  - `my-lora-model-1epoch-YeungNLP/` (~97 MB) - reproduce by running
+    `10-10-qlora-finetune-bloomz-YeungNLP.ipynb`.
+  - `my-lora-merged-model-steps640-YeungNLP/` (~667 MB) - reproduce by
+    running the merge notebook `10-15-merge-lora-weights-to-base-model.ipynb`
+    after training.
+  - `train_dataset_belle_100k_YeungNLP/` - download the BELLE dialog dataset
+    from HuggingFace (e.g. [`YeungNLP/firefly-train-1.1M`](https://huggingface.co/datasets/YeungNLP/firefly-train-1.1M)
+    or the original [`BELLE 100K`](https://huggingface.co/datasets/BelleGroup/train_1M_CN))
+    and tokenise it with the training notebook.
+  - `YeungNLP/bloom-1b1-zh` base model is pulled on demand by
+    `transformers`/`peft`; no manual download needed if you have internet.
+
+- **Model paths** in the two Gradio scripts (`model_name_or_path`) are
+  relative to the repo root. Adjust them if you move the checkpoints.
+- **`bitsandbytes` on Windows** is fragile. If the v1 (QLoRA) demo fails to
+  import `bitsandbytes`, run the v2 (merged) demo instead - it does not
+  require 4-bit loading.
+- **CPU inference** is possible for the merged model but very slow; a
+  CUDA-capable GPU is strongly recommended.
+
+## References
+
+- [QLoRA: Efficient Finetuning of Quantized LLMs](https://arxiv.org/abs/2305.14314)
+- [PEFT documentation](https://huggingface.co/docs/peft)
+- [YeungNLP model collection](https://huggingface.co/YeungNLP)
+
+## License
+
+Educational use only. Base model weights and dataset follow their upstream
+licenses (BLOOM RAIL License, BELLE dataset terms). Demo code and notebooks
+in this repository may be freely used, modified, and redistributed for
+teaching and research.
