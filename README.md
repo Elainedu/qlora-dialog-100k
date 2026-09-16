@@ -95,7 +95,7 @@ pip install -r requirements.txt
 ### Run the QLoRA (adapter + 4-bit base) demo - v1
 
 ```bash
-python gradio-app-v1-qlora-chat-custom-streaming.py
+python app_qlora_chat.py
 ```
 
 Loads `YeungNLP/bloom-1b1-zh` in 4-bit and attaches the LoRA adapter in
@@ -104,7 +104,7 @@ Loads `YeungNLP/bloom-1b1-zh` in 4-bit and attaches the LoRA adapter in
 ### Run the merged-model demo - v2
 
 ```bash
-python gradio-app-v2-merged-model-iterator-streaming.py
+python app_merged_chat.py
 ```
 
 Loads the fully merged checkpoint in `my-lora-merged-model-steps640-YeungNLP/`
@@ -121,24 +121,24 @@ python demo.py
 
 ```bash
 # 1. Fine-tune with QLoRA
-jupyter notebook 10-10-qlora-finetune-bloomz-YeungNLP.ipynb
+jupyter notebook notebooks/01-qlora-finetune-bloomz.ipynb
 
 # 2. Merge the LoRA weights back into the base model
-jupyter notebook 10-15-merge-lora-weights-to-base-model.ipynb
+jupyter notebook notebooks/02-merge-lora-weights.ipynb
 ```
 
 The merge step writes the standalone checkpoint that
-`gradio-app-v2-merged-model-iterator-streaming.py` consumes.
+`app_merged_chat.py` consumes.
 
 ## Project Structure
 
 ```
 qlora-dialog-100k/
-├── 10-10-qlora-finetune-bloomz-YeungNLP.ipynb          # QLoRA training notebook
-├── 10-15-merge-lora-weights-to-base-model.ipynb        # LoRA + base merge notebook
+├── notebooks/01-qlora-finetune-bloomz.ipynb          # QLoRA training notebook
+├── notebooks/02-merge-lora-weights.ipynb        # LoRA + base merge notebook
 ├── demo.py                                             # CLI smoke test
-├── gradio-app-v1-qlora-chat-custom-streaming.py        # v1: 4-bit base + LoRA adapter
-├── gradio-app-v2-merged-model-iterator-streaming.py    # v2: merged model, no bitsandbytes
+├── app_qlora_chat.py        # v1: 4-bit base + LoRA adapter
+├── app_merged_chat.py    # v2: merged model, no bitsandbytes
 ├── my-lora-model-1epoch-YeungNLP/                      # LoRA adapter (~97 MB) *
 │   ├── adapter_model.bin
 │   └── adapter_config.json
@@ -183,9 +183,9 @@ Both apps share the same feature set:
   described:
 
   - `my-lora-model-1epoch-YeungNLP/` (~97 MB) - reproduce by running
-    `10-10-qlora-finetune-bloomz-YeungNLP.ipynb`.
+    `notebooks/01-qlora-finetune-bloomz.ipynb`.
   - `my-lora-merged-model-steps640-YeungNLP/` (~667 MB) - reproduce by
-    running the merge notebook `10-15-merge-lora-weights-to-base-model.ipynb`
+    running the merge notebook `notebooks/02-merge-lora-weights.ipynb`
     after training.
   - `train_dataset_belle_100k_YeungNLP/` - download the BELLE dialog dataset
     from HuggingFace (e.g. [`YeungNLP/firefly-train-1.1M`](https://huggingface.co/datasets/YeungNLP/firefly-train-1.1M)
